@@ -76,6 +76,12 @@ BUILD_ID = "npc-ea-household-upload-2026-01-20-1315"
 @app.get("/build")
 def build():
     return {"build": BUILD_ID}
+    
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
    
 
