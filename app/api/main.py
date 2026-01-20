@@ -64,6 +64,13 @@ def init_db():
 @app.get("/routes")
 def routes():
     return [{"path": r.path, "name": r.name, "methods": sorted(list(r.methods or []))} for r in app.routes]
+    
+ BUILD_ID = "npc-ea-household-upload-2026-01-20-1315"
+
+@app.get("/build")
+def build():
+    return {"build": BUILD_ID}
+   
 
 
 @app.on_event("startup")
