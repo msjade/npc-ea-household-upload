@@ -174,9 +174,11 @@ def upload(
     client_name: str = Form(...),
     client_project: str = Form(...),
     collection_date: str = Form(...),
-    overwrite: str = Form("no"),  # checkbox sends "yes" when checked; otherwise default is "no"
     file: UploadFile = File(...),
 ):
+    allow_overwrite = False
+    ...
+
     client_name = (client_name or "").strip()
     client_project = (client_project or "").strip()
 
