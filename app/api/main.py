@@ -61,6 +61,9 @@ def init_db():
         CREATE INDEX IF NOT EXISTS ix_upload_nat_ea_sn
         ON ea_uploads (NAT_EA_SN);
         """))
+@app.get("/routes")
+def routes():
+    return [{"path": r.path, "name": r.name, "methods": sorted(list(r.methods or []))} for r in app.routes]
 
 
 @app.on_event("startup")
