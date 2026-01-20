@@ -64,12 +64,19 @@ def init_db():
 @app.get("/routes")
 def routes():
     return [{"path": r.path, "name": r.name, "methods": sorted(list(r.methods or []))} for r in app.routes]
-    
- BUILD_ID = "npc-ea-household-upload-2026-01-20-1315"
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
+app = FastAPI(title="NPC EA Household Upload")
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+BUILD_ID = "npc-ea-household-upload-2026-01-20-1315"
 
 @app.get("/build")
 def build():
     return {"build": BUILD_ID}
+
    
 
 
