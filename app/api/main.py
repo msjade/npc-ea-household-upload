@@ -20,11 +20,11 @@ app = FastAPI(title="NPC EA Household Upload")
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+BUILD_ID = "npc-ea-household-upload-2026-01-20-1315"
+
 
 def init_db():
-    # SQLAlchemy 2.0: use a connection (engine.execute is removed)
     with engine.begin() as conn:
-        # Master table
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS ea_frame (
           NAT_EA_SN TEXT PRIMARY KEY,
@@ -36,7 +36,6 @@ def init_db():
         );
         """))
 
-        # Upload history (per client)
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS ea_uploads (
           id BIGSERIAL PRIMARY KEY,
@@ -51,7 +50,6 @@ def init_db():
         );
         """))
 
-        # Prevent duplicates from same client (same project + date + EA)
         conn.execute(text("""
         CREATE UNIQUE INDEX IF NOT EXISTS ux_upload_unique
         ON ea_uploads (client_name, client_project, collection_date, NAT_EA_SN);
@@ -61,41 +59,38 @@ def init_db():
         CREATE INDEX IF NOT EXISTS ix_upload_nat_ea_sn
         ON ea_uploads (NAT_EA_SN);
         """))
-@app.get("/routes")
-def routes():
-    return [{"path": r.path, "name": r.name, "methods": sorted(list(r.methods or []))} for r in app.routes]
-
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-
-app = FastAPI(title="NPC EA Household Upload")
-templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-BUILD_ID = "npc-ea-household-upload-2026-01-20-1315"
-
-@app.get("/build")
-def build():
-    return {"build": BUILD_ID}
-    
-from fastapi.responses import HTMLResponse
-
-@app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-from fastapi.responses import HTMLResponse
-
-@app.get("/home", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-@app.post("/upload", response_class=HTMLResponse)
-def upload(request: Request):
-    return templates.TemplateResponse("result.html", {"request": request, "ok": True, "message": "Upload route works"})
-
-
-   
 
 
 @app.on_event("startup")
 def _startup():
     init_db()
+
+
+@app.get("/build")
+def build():
+    return {"build": BUILD_ID}
+
+
+@app.get("/routes")
+def routes():
+    return [{"path": r.path, "name": r.name, "methods": sorted(list(r.methods or []))} for r in app.routes]
+
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/home", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.post("/upload", response_class=HTMLResponse)
+def upload(request: Request):
+    # TEMP test response — replace with your real upload logic after confirming it works
+    return templates.TemplateResponse(
+        "result.html",
+        {"request": request, "ok": True, "message": "Upload route works"},
+    )
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "time": datetime.utcnow().isoformat() + "Z"}
