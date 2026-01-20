@@ -177,7 +177,6 @@ def upload(
     file: UploadFile = File(...),
 ):
     allow_overwrite = False
-    ...
 
     client_name = (client_name or "").strip()
     client_project = (client_project or "").strip()
@@ -211,7 +210,7 @@ def upload(
             {"request": request, "ok": False, "message": err},
         )
 
-    allow_overwrite = (overwrite == "yes")
+    allow_overwrite = False
 
     updated = 0
     blocked = 0
