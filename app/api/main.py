@@ -82,6 +82,16 @@ from fastapi.responses import HTMLResponse
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+from fastapi.responses import HTMLResponse
+
+@app.get("/home", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.post("/upload", response_class=HTMLResponse)
+def upload(request: Request):
+    return templates.TemplateResponse("result.html", {"request": request, "ok": True, "message": "Upload route works"})
+
 
    
 
