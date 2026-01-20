@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NPC EA Household Upload</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/static/img/npc_logo.jpeg" class="logo" alt="NPC Logo" />
+        <div>
+          <div class="title">National Population Commission</div>
+          <div class="subtitle">EA Household Count Upload Portal</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="card">
+      <h1>Upload EA Household Count</h1>
+      <p class="muted">
+        Upload a CSV with columns: <b>NAT_EA_SN</b>, <b>HOUSEHOLD_COUNT</b>.
+        NAT_EA_SN is treated as text and duplicates are prevented.
+      </p>
+
+      <form action="/upload" method="post" enctype="multipart/form-data" class="form">
+        <div class="grid">
+          <div>
+            <label>Client Name</label>
+            <input name="client_name" placeholder="e.g. UNICEF" required />
+          </div>
+          <div>
+            <label>Client Project</label>
+            <input name="client_project" placeholder="e.g. Baseline Survey 2026" required />
+          </div>
+          <div>
+            <label>Date of Collection</label>
+            <input type="date" name="collection_date" required />
+          </div>
+        </div>
+
+        <div class="policy">
+          <div class="policy-title">Policy A (recommended)</div>
+          <div class="muted">
+            Do not overwrite an EA already updated by another client. Your submission will still be saved for audit.
+          </div>
+          <label class="checkbox">
+            <input type="checkbox" name="overwrite" value="yes" />
+            Allow overwrite (admin-only)
+          </label>
+        </div>
+
+        <div class="upload">
+          <label>CSV File</label>
+          <input type="file" name="file" accept=".csv" required />
+        </div>
+
+        <button class="btn" type="submit">Upload</button>
+      </form>
+    </main>
+
+    <footer class="footer">
+      <span>NPC • Secure Data Upload</span>
+    </footer>
+  </div>
+</body>
+</html>

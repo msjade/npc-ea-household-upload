@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Upload Result</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/static/img/npc_logo.jpeg" class="logo" alt="NPC Logo" />
+        <div>
+          <div class="title">National Population Commission</div>
+          <div class="subtitle">EA Household Count Upload Portal</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="card">
+      <h1>{{ "Success" if ok else "Upload Failed" }}</h1>
+
+      <div class="{{ 'alert ok' if ok else 'alert bad' }}">
+        <pre style="white-space: pre-wrap; margin:0;">{{ message }}</pre>
+      </div>
+
+      {% if notes and notes|length > 0 %}
+      <h3>Details (preview)</h3>
+      <ul class="notes">
+        {% for n in notes %}
+        <li>{{ n }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <a class="btn secondary" href="/">Back</a>
+    </main>
+
+    <footer class="footer">
+      <span>NPC • Thank you</span>
+    </footer>
+  </div>
+</body>
+</html>
