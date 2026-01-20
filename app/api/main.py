@@ -23,18 +23,22 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+from sqlalchemy import text
+
 def init_db():
     # Master table
-    engine.execute(text("""
-    CREATE TABLE IF NOT EXISTS ea_frame (
-      NAT_EA_SN TEXT PRIMARY KEY,
-      HOUSEHOLD_COUNT INTEGER,
-      last_updated_by TEXT,
-      last_updated_project TEXT,
-      last_updated_date DATE,
-      last_updated_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    """))
+    with engine.begin() as conn:  # opens connection + commits automatically
+        conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS ea_frame (
+          NAT_EA_SN TEXT PRIMARY KEY,
+          HOUSEHOLD_COUNT INTEGER,
+          last_updated_by TEXT,
+          last_updated_project TEXT,
+          last_updated_date DATE,
+          last_updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        """))
+
 
     # Upload history (per client)
     engine.execute(text("""
