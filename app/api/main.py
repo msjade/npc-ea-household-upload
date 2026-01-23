@@ -49,7 +49,7 @@ def init_db():
         );
         """))
 
-        # Batch table (for dedupe + summary)
+        # Batch table
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS upload_batches (
           id BIGSERIAL PRIMARY KEY,
@@ -69,17 +69,15 @@ def init_db():
         );
         """))
 
-        # Prevent same-file reupload for same client/project/date
         conn.execute(text("""
         CREATE UNIQUE INDEX IF NOT EXISTS ux_batch_dedupe
         ON upload_batches (client_name, client_project, collection_date, file_hash);
         """))
 
-        # Optional row-level audit (OFF by default to save DB space)
+        # Upload history (may already exist from old versions)
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS ea_uploads (
           id BIGSERIAL PRIMARY KEY,
-          batch_id BIGINT REFERENCES upload_batches(id) ON DELETE CASCADE,
           NAT_EA_SN TEXT NOT NULL,
           HOUSEHOLD_COUNT INTEGER NOT NULL,
           client_name TEXT NOT NULL,
@@ -91,6 +89,29 @@ def init_db():
         );
         """))
 
+        # ✅ Migration: add batch_id column if missing
+        conn.execute(text("""
+        ALTER TABLE ea_uploads
+        ADD COLUMN IF NOT EXISTS batch_id BIGINT;
+        """))
+
+        # ✅ Add FK only if not already present
+        # (Postgres doesn't have IF NOT EXISTS for ADD CONSTRAINT, so we guard it)
+        conn.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'fk_ea_uploads_batch_id'
+          ) THEN
+            ALTER TABLE ea_uploads
+              ADD CONSTRAINT fk_ea_uploads_batch_id
+              FOREIGN KEY (batch_id) REFERENCES upload_batches(id)
+              ON DELETE CASCADE;
+          END IF;
+        END $$;
+        """))
+
+        # Indexes
         conn.execute(text("""
         CREATE INDEX IF NOT EXISTS ix_upload_batch_id
         ON ea_uploads (batch_id);
@@ -100,6 +121,7 @@ def init_db():
         CREATE INDEX IF NOT EXISTS ix_upload_nat_ea_sn
         ON ea_uploads (NAT_EA_SN);
         """))
+
 
 
 @app.on_event("startup")
