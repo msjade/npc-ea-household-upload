@@ -244,3 +244,85 @@ input:focus{border-color: rgba(11,122,59,.6); box-shadow: 0 0 0 3px rgba(11,122,
   display:flex;
   gap:10px;
 }
+.tiny{font-size:12px}
+
+.preview-card{
+  margin-top:14px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:14px;
+  background:#fff;
+}
+
+.preview-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.preview-title{
+  font-weight:800;
+  color:var(--text);
+  margin-bottom:4px;
+}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:6px 10px;
+  background:var(--bg);
+}
+.chip-k{color:var(--muted);font-size:12px}
+.chip-v{font-weight:800;font-size:12px;color:var(--text)}
+
+.table-wrap{
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+
+.preview-table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:620px;
+}
+.preview-table th, .preview-table td{
+  padding:10px 12px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+  text-align:left;
+}
+.preview-table thead th{
+  position:sticky;
+  top:0;
+  background:#fff;
+  z-index:2;
+}
+
+.mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  font-size:12px;
+  font-weight:700;
+}
+.badge.ok{
+  background: rgba(11,122,59,.10);
+  border-color: rgba(11,122,59,.30);
+  color: var(--green);
+}
+.badge.bad{
+  background: rgba(220,38,38,.10);
+  border-color: rgba(220,38,38,.30);
+  color: #dc2626;
+}
+
