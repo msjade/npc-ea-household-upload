@@ -22,57 +22,63 @@
       <h1>Upload EA Household Count</h1>
       <p class="muted">
         Upload a CSV with columns: <b>NAT_EA_SN</b>, <b>HOUSEHOLD_COUNT</b>.
-        NAT_EA_SN is treated as text and duplicates are prevented.
+        You’ll see a preview and validation summary before uploading.
       </p>
 
       <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data" class="form">
         <div class="grid">
           <div>
             <label>Client Name</label>
-            <input name="client_name" placeholder="e.g. UNICEF" required />
+            <input name="client_name" id="client_name" placeholder="e.g. UNICEF" required />
           </div>
           <div>
             <label>Client Project</label>
-            <input name="client_project" placeholder="e.g. Baseline Survey 2026" required />
+            <input name="client_project" id="client_project" placeholder="e.g. Baseline Survey 2026" required />
           </div>
           <div>
             <label>Date of Collection</label>
-            <input type="date" name="collection_date" required />
+            <input type="date" name="collection_date" id="collection_date" required />
           </div>
         </div>
 
         <div class="upload">
           <label>CSV File</label>
-          <input id="csvFile" type="file" name="file" accept=".csv" required />
-          <div class="muted" style="margin-top:6px;">
-            Tip: You will see a preview before upload.
-          </div>
+          <input type="file" name="file" id="fileInput" accept=".csv" required />
+          <div class="muted tiny">Tip: Export as CSV (UTF-8). Header must include NAT_EA_SN and HOUSEHOLD_COUNT.</div>
         </div>
 
-        <!-- Preview Panel -->
-        <section id="previewPanel" class="preview-panel" style="display:none;">
-          <div class="preview-head">
-            <div class="preview-title">Preview</div>
-            <div id="previewMeta" class="preview-meta"></div>
+        <!-- Preview + validation -->
+        <div id="previewCard" class="preview-card" style="display:none;">
+          <div class="preview-top">
+            <div>
+              <div class="preview-title">File Preview & Validation</div>
+              <div id="fileMeta" class="muted tiny"></div>
+            </div>
+            <div class="chips" id="chips"></div>
           </div>
 
-          <div id="previewAlert" class="preview-alert"></div>
+          <div id="alertBox" class="alert bad" style="display:none;"></div>
 
-          <div class="preview-table-wrap">
+          <div class="table-wrap">
             <table class="preview-table">
               <thead>
                 <tr>
                   <th>#</th>
                   <th>NAT_EA_SN</th>
                   <th>HOUSEHOLD_COUNT</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody id="previewBody"></tbody>
             </table>
           </div>
-        </section>
 
-        <button id="submitBtn" class="btn btn-disabled" type="submit" disabled>Upload</button>
+          <div class="muted tiny" style="margin-top:10px;">
+            Showing first 20 rows only. Validation covers all rows.
+          </div>
+        </div>
+
+        <button class="btn" id="submitBtn" type="submit" disabled>Upload</button>
       </form>
     </main>
 
@@ -81,167 +87,183 @@
     </footer>
   </div>
 
-  <script>
-    const fileInput = document.getElementById("csvFile");
-    const previewPanel = document.getElementById("previewPanel");
-    const previewMeta = document.getElementById("previewMeta");
-    const previewAlert = document.getElementById("previewAlert");
-    const previewBody = document.getElementById("previewBody");
-    const submitBtn = document.getElementById("submitBtn");
-    const uploadForm = document.getElementById("uploadForm");
+<script>
+(function(){
+  const fileInput = document.getElementById("fileInput");
+  const previewCard = document.getElementById("previewCard");
+  const previewBody = document.getElementById("previewBody");
+  const submitBtn = document.getElementById("submitBtn");
+  const alertBox = document.getElementById("alertBox");
+  const chips = document.getElementById("chips");
+  const fileMeta = document.getElementById("fileMeta");
 
-    function setButtonEnabled(enabled, label) {
-      submitBtn.disabled = !enabled;
-      submitBtn.textContent = label || (enabled ? "Upload" : "Upload");
-      if (enabled) submitBtn.classList.remove("btn-disabled");
-      else submitBtn.classList.add("btn-disabled");
+  function escapeHtml(s){
+    return (s ?? "").toString()
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // Basic CSV parser with quote handling
+  function parseCSV(text){
+    const rows = [];
+    let row = [], cur = "", inQuotes = false;
+
+    for (let i=0; i<text.length; i++){
+      const c = text[i];
+      const next = text[i+1];
+
+      if (c === '"' && inQuotes && next === '"'){ // escaped quote
+        cur += '"'; i++;
+      } else if (c === '"'){
+        inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes){
+        row.push(cur); cur = "";
+      } else if ((c === '\n' || c === '\r') && !inQuotes){
+        if (c === '\r' && next === '\n') i++; // CRLF
+        row.push(cur); cur = "";
+        // skip empty last line
+        if (row.length === 1 && row[0].trim() === "") { row = []; continue; }
+        rows.push(row); row = [];
+      } else {
+        cur += c;
+      }
+    }
+    // last cell
+    if (cur.length || row.length){
+      row.push(cur);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function setChips(stats){
+    chips.innerHTML = "";
+    const items = [
+      ["Total rows", stats.totalRows],
+      ["Valid", stats.valid],
+      ["Invalid", stats.invalid],
+      ["Duplicates", stats.duplicates]
+    ];
+
+    for (const [k,v] of items){
+      const el = document.createElement("div");
+      el.className = "chip";
+      el.innerHTML = `<span class="chip-k">${escapeHtml(k)}</span><span class="chip-v">${escapeHtml(v)}</span>`;
+      chips.appendChild(el);
+    }
+  }
+
+  function showError(msg){
+    alertBox.style.display = "block";
+    alertBox.textContent = msg;
+  }
+
+  function clearError(){
+    alertBox.style.display = "none";
+    alertBox.textContent = "";
+  }
+
+  fileInput.addEventListener("change", async (e) => {
+    submitBtn.disabled = true;
+    previewBody.innerHTML = "";
+    clearError();
+
+    const file = e.target.files?.[0];
+    if (!file){
+      previewCard.style.display = "none";
+      return;
     }
 
-    function setAlert(type, msg) {
-      previewAlert.classList.remove("alert-ok", "alert-bad");
-      if (type === "ok") previewAlert.classList.add("preview-alert", "alert-ok");
-      if (type === "bad") previewAlert.classList.add("preview-alert", "alert-bad");
-      previewAlert.textContent = msg;
+    previewCard.style.display = "block";
+    fileMeta.textContent = `${file.name} • ${(file.size/1024).toFixed(1)} KB`;
+
+    const text = await file.text();
+    const table = parseCSV(text);
+
+    if (!table.length){
+      showError("Your CSV looks empty.");
+      setChips({totalRows:0, valid:0, invalid:0, duplicates:0});
+      return;
     }
 
-    function parseCSV(text) {
-      // Simple CSV parser (handles commas + quoted values)
-      const rows = [];
-      let cur = "", inQuotes = false;
-      const lines = [];
-      for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        const next = text[i + 1];
-        if (ch === '"' && next === '"') { cur += '"'; i++; continue; }
-        if (ch === '"') { inQuotes = !inQuotes; continue; }
-        if (!inQuotes && (ch === "\n" || ch === "\r")) {
-          if (ch === "\r" && next === "\n") i++;
-          lines.push(cur);
-          cur = "";
-          continue;
-        }
-        cur += ch;
-      }
-      if (cur.length) lines.push(cur);
+    const header = table[0].map(h => (h ?? "").trim());
+    const idxNat = header.findIndex(h => h === "NAT_EA_SN");
+    const idxHH  = header.findIndex(h => h === "HOUSEHOLD_COUNT");
 
-      for (const line of lines) {
-        // split by commas not in quotes (we already removed quotes state)
-        // We parse again safely:
-        const out = [];
-        let c = "", q = false;
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          const next = line[i + 1];
-          if (ch === '"' && next === '"') { c += '"'; i++; continue; }
-          if (ch === '"') { q = !q; continue; }
-          if (ch === "," && !q) { out.push(c); c = ""; continue; }
-          c += ch;
-        }
-        out.push(c);
-        rows.push(out.map(v => (v ?? "").trim()));
-      }
-      return rows;
+    if (idxNat === -1 || idxHH === -1){
+      showError("Missing required columns. Header must include: NAT_EA_SN and HOUSEHOLD_COUNT.");
+      setChips({totalRows:0, valid:0, invalid:0, duplicates:0});
+      return;
     }
 
-    fileInput.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      previewBody.innerHTML = "";
-      previewPanel.style.display = "none";
-      setButtonEnabled(false);
+    const seen = new Set();
+    let valid = 0, invalid = 0, duplicates = 0;
+    const preview = [];
 
-      if (!file) return;
+    // validate all rows (from line 2)
+    for (let r=1; r<table.length; r++){
+      const row = table[r];
+      const nat = (row[idxNat] ?? "").trim();
+      const hhRaw = (row[idxHH] ?? "").trim();
 
-      // Basic size guard (optional)
-      if (file.size > 8 * 1024 * 1024) {
-        previewPanel.style.display = "block";
-        setAlert("bad", "File is too large for preview (max 8MB). Please reduce the file size.");
-        return;
+      let status = "OK";
+      let ok = true;
+
+      if (!nat){
+        status = "Missing NAT_EA_SN";
+        ok = false;
+      } else if (seen.has(nat)){
+        status = "Duplicate NAT_EA_SN";
+        ok = false;
+        duplicates++;
+      } else {
+        seen.add(nat);
       }
 
-      const text = await file.text();
-      const rows = parseCSV(text.replace(/^\uFEFF/, "")); // remove BOM
-      if (!rows.length) {
-        previewPanel.style.display = "block";
-        setAlert("bad", "CSV looks empty.");
-        return;
+      const hh = Number(hhRaw);
+      if (ok && (!Number.isFinite(hh) || !Number.isInteger(hh))){
+        status = "HH must be whole number";
+        ok = false;
+      }
+      if (ok && hh < 0){
+        status = "HH cannot be negative";
+        ok = false;
       }
 
-      const header = rows[0].map(h => (h || "").trim());
-      const idxNat = header.findIndex(h => h.toUpperCase() === "NAT_EA_SN");
-      const idxHh  = header.findIndex(h => h.toUpperCase() === "HOUSEHOLD_COUNT");
+      if (ok) valid++; else invalid++;
 
-      previewPanel.style.display = "block";
-
-      if (idxNat === -1 || idxHh === -1) {
-        setAlert("bad", "Missing required columns. CSV must contain: NAT_EA_SN, HOUSEHOLD_COUNT.");
-        previewMeta.textContent = `Detected columns: ${header.filter(Boolean).join(", ") || "(none)"}`;
-        return;
+      if (preview.length < 20){
+        preview.push({nat, hh: hhRaw, status, ok});
       }
+    }
 
-      const seen = new Set();
-      const duplicates = [];
-      let validRows = 0;
-      let invalidRows = 0;
+    setChips({totalRows: Math.max(0, table.length - 1), valid, invalid, duplicates});
 
-      const bodyRows = rows.slice(1).filter(r => r.length && r.some(v => (v || "").trim() !== ""));
-      for (let i = 0; i < bodyRows.length; i++) {
-        const r = bodyRows[i];
-        const nat = (r[idxNat] || "").trim();
-        const hhRaw = (r[idxHh] || "").trim();
+    // render preview
+    previewBody.innerHTML = preview.map((p, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td class="mono">${escapeHtml(p.nat)}</td>
+        <td class="mono">${escapeHtml(p.hh)}</td>
+        <td><span class="badge ${p.ok ? "ok" : "bad"}">${escapeHtml(p.status)}</span></td>
+      </tr>
+    `).join("");
 
-        let hhOK = /^-?\d+$/.test(hhRaw) && parseInt(hhRaw, 10) >= 0;
-        let natOK = nat.length > 0;
+    if (invalid > 0){
+      showError("Fix the invalid rows (and duplicates) before uploading. Upload is disabled until validation passes.");
+      submitBtn.disabled = true;
+      return;
+    }
 
-        if (!natOK || !hhOK) invalidRows++;
-        else validRows++;
+    // all good
+    clearError();
+    submitBtn.disabled = false;
+  });
 
-        if (natOK) {
-          const key = nat;
-          if (seen.has(key)) duplicates.push(nat);
-          seen.add(key);
-        }
-
-        // Preview first 20
-        if (i < 20) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${natOK ? nat : "<span style='color:#dc2626'>[missing]</span>"}</td>
-            <td>${hhOK ? hhRaw : "<span style='color:#dc2626'>[invalid]</span>"}</td>
-          `;
-          previewBody.appendChild(tr);
-        }
-      }
-
-      const total = bodyRows.length;
-      const dupCount = duplicates.length;
-
-      previewMeta.textContent = `${file.name} • Rows: ${total} • Showing: ${Math.min(20, total)}`;
-
-      if (total === 0) {
-        setAlert("bad", "No data rows found. Please add at least one record.");
-        return;
-      }
-
-      if (invalidRows > 0) {
-        setAlert("bad", `Fix ${invalidRows} invalid row(s) (missing NAT_EA_SN or invalid HOUSEHOLD_COUNT). Upload is blocked.`);
-        return;
-      }
-
-      if (dupCount > 0) {
-        const example = [...new Set(duplicates)].slice(0, 8).join(", ");
-        setAlert("bad", `Duplicate NAT_EA_SN detected inside this CSV (${dupCount}). Example: ${example}. Upload is blocked.`);
-        return;
-      }
-
-      setAlert("ok", `Looks good. ${validRows} row(s) ready to upload.`);
-      setButtonEnabled(true);
-    });
-
-    uploadForm.addEventListener("submit", () => {
-      // UX: prevent double click / double submit
-      setButtonEnabled(false, "Uploading...");
-    });
-  </script>
+})();
+</script>
 </body>
 </html>
