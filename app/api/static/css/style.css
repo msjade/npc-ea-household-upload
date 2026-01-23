@@ -102,3 +102,92 @@ input:focus{border-color: rgba(11,122,59,.6); box-shadow: 0 0 0 3px rgba(11,122,
 
 .notes{margin:10px 0 0 18px;color:var(--muted)}
 .footer{margin-top:16px;color:var(--muted);font-size:12px;text-align:center}
+
+
+/* ---------------------------
+   Client-side CSV Preview UI
+---------------------------- */
+
+.preview-panel{
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.preview-head{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.preview-title{
+  font-weight: 800;
+  color: var(--text);
+}
+
+.preview-meta{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.preview-alert{
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.preview-alert.alert-ok{
+  background: rgba(11,122,59,.08);
+  border-color: rgba(11,122,59,.25);
+  color: var(--text);
+}
+
+.preview-alert.alert-bad{
+  background: rgba(220,38,38,.08);
+  border-color: rgba(220,38,38,.25);
+  color: var(--text);
+}
+
+.preview-table-wrap{
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.preview-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.preview-table th,
+.preview-table td{
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(226,232,240,.9);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.preview-table th{
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 1;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.btn-disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
