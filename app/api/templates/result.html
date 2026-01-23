@@ -19,22 +19,49 @@
     </header>
 
     <main class="card">
-      <h1>{{ "Success" if ok else "Upload Failed" }}</h1>
-
-      <div class="{{ 'alert ok' if ok else 'alert bad' }}">
-        <pre style="white-space: pre-wrap; margin:0;">{{ message }}</pre>
+      <div class="result-head">
+        <div class="result-icon {{ 'ok' if ok else 'bad' }}">
+          {{ "✓" if ok else "!" }}
+        </div>
+        <div>
+          <h1 style="margin:0;">{{ "Upload Successful" if ok else "Upload Failed" }}</h1>
+          <div class="muted" style="margin-top:6px;">
+            {{ "Your submission has been received and processed." if ok else "Please review the issue and try again." }}
+          </div>
+        </div>
       </div>
 
+      <!-- Summary -->
+      <div class="alert {{ 'ok' if ok else 'bad' }}">
+        {% if message %}
+          {% set lines = message.split('\n') %}
+          <div class="summary-lines">
+            {% for line in lines %}
+              {% if line.strip() %}
+              <div class="summary-line">{{ line }}</div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="summary-line">{{ "Done." if ok else "Something went wrong." }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Optional details -->
       {% if notes and notes|length > 0 %}
-      <h3>Details (preview)</h3>
-      <ul class="notes">
-        {% for n in notes %}
-        <li>{{ n }}</li>
-        {% endfor %}
-      </ul>
+      <details class="details">
+        <summary>Show details</summary>
+        <ul class="notes">
+          {% for n in notes %}
+            <li>{{ n }}</li>
+          {% endfor %}
+        </ul>
+      </details>
       {% endif %}
 
-      <a class="btn secondary" href="/">Back</a>
+      <div class="actions">
+        <a class="btn" href="/">Upload another file</a>
+      </div>
     </main>
 
     <footer class="footer">
